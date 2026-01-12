@@ -1,9 +1,10 @@
 import express from "express";
 import pgClient from "../db.js";
+import adminAuthorization from "../middlewares/adminAuthorization.js";
 
 const adminRoutes = express.Router();
 
-adminRoutes.get("/dashboard-stats", async (req, res) => {
+adminRoutes.get("/dashboard-stats", adminAuthorization, async (req, res) => {
   try {
     const revenueResult = await pgClient.query(
       "SELECT COALESCE(SUM(c.price), 0) as total_revenue FROM bookings b JOIN courts c ON b.court_id = c.id "
@@ -24,7 +25,7 @@ adminRoutes.get("/dashboard-stats", async (req, res) => {
   }
 });
 
-adminRoutes.get("/bookings/limit", async (req, res) => {
+adminRoutes.get("/bookings/limit", adminAuthorization, async (req, res) => {
   try {
     const latestBookings = await pgClient.query(
       "SELECT * FROM bookings ORDER BY booking_date DESC, id DESC LIMIT 5"
@@ -35,7 +36,7 @@ adminRoutes.get("/bookings/limit", async (req, res) => {
   }
 });
 
-adminRoutes.get("/sports", async (req, res) => {
+adminRoutes.get("/sports", adminAuthorization, async (req, res) => {
   try {
     const sports = await pgClient.query("SELECT * FROM sports");
     res.status(200).json(sports.rows);
@@ -44,7 +45,7 @@ adminRoutes.get("/sports", async (req, res) => {
   }
 });
 
-adminRoutes.post("/sports", async (req, res) => {
+adminRoutes.post("/sports", adminAuthorization, async (req, res) => {
   const { name, image_url } = req.body;
   try {
     const newSport = await pgClient.query(
@@ -57,7 +58,7 @@ adminRoutes.post("/sports", async (req, res) => {
   }
 });
 
-adminRoutes.delete("/sports/:sportId", async (req, res) => {
+adminRoutes.delete("/sports/:sportId", adminAuthorization, async (req, res) => {
   try {
     const deleteSport = await pgClient.query(
       "DELETE FROM sports WHERE id = $1 RETURNING *",
@@ -69,7 +70,7 @@ adminRoutes.delete("/sports/:sportId", async (req, res) => {
   }
 });
 
-adminRoutes.get("/courts/:sportId", async (req, res) => {
+adminRoutes.get("/courts/:sportId", adminAuthorization, async (req, res) => {
   try {
     const courts = await pgClient.query(
       "SELECT * FROM courts WHERE sport_id = $1",
@@ -81,7 +82,7 @@ adminRoutes.get("/courts/:sportId", async (req, res) => {
   }
 });
 
-adminRoutes.post("/courts/:sportId", async (req, res) => {
+adminRoutes.post("/courts/:sportId", adminAuthorization, async (req, res) => {
   const { type, price, image_url } = req.body;
   try {
     const newCourt = await pgClient.query(
@@ -94,7 +95,7 @@ adminRoutes.post("/courts/:sportId", async (req, res) => {
   }
 });
 
-adminRoutes.delete("/courts/:courtId", async (req, res) => {
+adminRoutes.delete("/courts/:courtId", adminAuthorization, async (req, res) => {
   try {
     const deleteCourt = await pgClient.query(
       "DELETE FROM courts WHERE id = $1 RETURNING *",
@@ -106,7 +107,7 @@ adminRoutes.delete("/courts/:courtId", async (req, res) => {
   }
 });
 
-adminRoutes.patch("/courts/:courtId", async (req, res) => {
+adminRoutes.patch("/courts/:courtId", adminAuthorization, async (req, res) => {
   const { price } = req.body;
   try {
     const updateCourt = await pgClient.query(
@@ -119,7 +120,7 @@ adminRoutes.patch("/courts/:courtId", async (req, res) => {
   }
 });
 
-adminRoutes.patch("/courts/:courtId/disable", async (req, res) => {
+adminRoutes.patch("/courts/:courtId/disable", adminAuthorization, async (req, res) => {
   try {
     const disableCourt = await pgClient.query(
       "UPDATE courts SET is_disabled = true WHERE id = $1 RETURNING *",
@@ -131,7 +132,7 @@ adminRoutes.patch("/courts/:courtId/disable", async (req, res) => {
   }
 });
 
-adminRoutes.patch("/courts/:courtId/enable", async (req, res) => {
+adminRoutes.patch("/courts/:courtId/enable", adminAuthorization, async (req, res) => {
   try {
     const enableCourt = await pgClient.query(
       "UPDATE courts SET is_disabled = false WHERE id = $1 RETURNING *",
@@ -143,7 +144,7 @@ adminRoutes.patch("/courts/:courtId/enable", async (req, res) => {
   }
 });
 
-adminRoutes.get("/bookings", async (req, res) => {
+adminRoutes.get("/bookings", adminAuthorization, async (req, res) => {
   try {
     const bookings = await pgClient.query("SELECT * FROM bookings");
     res.status(200).json(bookings.rows);
