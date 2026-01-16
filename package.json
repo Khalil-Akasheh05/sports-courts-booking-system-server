@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/Khalil-Akasheh05/sports-courts-booking-system-server#readme",
   "dependencies": {
+    "@emailjs/nodejs": "^5.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",

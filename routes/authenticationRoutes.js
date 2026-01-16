@@ -7,7 +7,7 @@ authenticationRoutes.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
     const user = await pgClient.query(
-      "SELECT * FROM users WHERE email = $1 AND password = $2",
+      "SELECT id, full_name, email, role FROM users WHERE email = $1 AND password = $2",
       [email, password]
     );
     if (user.rows.length === 0) {
@@ -19,7 +19,7 @@ authenticationRoutes.post("/login", async (req, res) => {
   }
 });
 
-authenticationRoutes.post("/register", async (req, res) => {
+authenticationRoutes.post("/signup", async (req, res) => {
   const { full_name, email, password } = req.body;
   try {
     const existingUser = await pgClient.query("SELECT * FROM users WHERE email = $1", [email])
