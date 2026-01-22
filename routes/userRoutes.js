@@ -154,7 +154,7 @@ userRoutes.patch("/bookings/:bookingId", async (req, res) => {
 
     if (selectedDate < today) {
       return res.status(400).json({
-        error: "You cannot book a court for a past date.",
+        messsage: "You cannot book a court for a past date.",
       });
     }
     const updateBooking = await pgClient.query(
