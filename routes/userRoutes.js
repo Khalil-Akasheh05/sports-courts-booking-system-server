@@ -10,7 +10,7 @@ userRoutes.get("/explore-sports", async (req, res) => {
     const sports = await pgClient.query("SELECT * FROM sports LIMIT 3");
     res.status(200).json(sports.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load sports." });
   }
 });
 
@@ -19,7 +19,7 @@ userRoutes.get("/sports", async (req, res) => {
     const sports = await pgClient.query("SELECT * FROM sports");
     res.status(200).json(sports.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load sports." });
   }
 });
 
@@ -27,12 +27,12 @@ userRoutes.get("/courts/:sportId", async (req, res) => {
   try {
     const courts = await pgClient.query(
       "SELECT * FROM courts WHERE sport_id = $1 AND is_disabled = false",
-      [req.params.sportId]
+      [req.params.sportId],
     );
 
     res.status(200).json(courts.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load courts." });
   }
 });
 
@@ -40,11 +40,11 @@ userRoutes.get("/time-slots/:courtId/:date", async (req, res) => {
   try {
     const timeSlots = await pgClient.query(
       "SELECT * FROM time_slots ts WHERE ts.court_id = $1 AND NOT EXISTS (SELECT 1 FROM bookings b WHERE b.time_slot_id = ts.id AND b.booking_date = $2) ORDER BY ts.start_time ASC",
-      [req.params.courtId, req.params.date]
+      [req.params.courtId, req.params.date],
     );
     res.status(200).json(timeSlots.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load time slots." });
   }
 });
 
@@ -64,12 +64,12 @@ userRoutes.get("/time-slots/:courtId/:date/:bookingId", async (req, res) => {
         )
       ORDER BY ts.start_time ASC
       `,
-      [req.params.courtId, req.params.date, req.params.bookingId]
+      [req.params.courtId, req.params.date, req.params.bookingId],
     );
 
     res.status(200).json(timeSlots.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load time slots." });
   }
 });
 
@@ -83,13 +83,13 @@ userRoutes.post("/book/:courtId", async (req, res) => {
 
     if (selectedDate < today) {
       return res.status(400).json({
-        error: "You cannot book a court for a past date",
+        message: "You cannot book a court for a past date.",
       });
     }
 
     const court = await pgClient.query(
       "SELECT price FROM courts where id = $1",
-      [req.params.courtId]
+      [req.params.courtId],
     );
 
     const booking = await pgClient.query(
@@ -100,11 +100,13 @@ userRoutes.post("/book/:courtId", async (req, res) => {
         Number(req.params.courtId),
         Number(time_slot_id),
         court.rows[0].price,
-      ]
+      ],
     );
     res.status(201).json(booking.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to create booking. Please try again." });
   }
 });
 
@@ -134,34 +136,34 @@ userRoutes.get("/bookings/:userId", async (req, res) => {
         AND b.booking_date >= CURRENT_DATE
       ORDER BY b.booking_date ASC, ts.start_time ASC
       `,
-      [req.params.userId]
+      [req.params.userId],
     );
     res.status(200).json(bookings.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load bookings." });
   }
 });
 
 userRoutes.patch("/bookings/:bookingId", async (req, res) => {
   const { booking_date, time_slot_id } = req.body;
   try {
-     const today = new Date();
+    const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const selectedDate = new Date(booking_date);
 
     if (selectedDate < today) {
       return res.status(400).json({
-        error: "You cannot book a court for a past date",
+        error: "You cannot book a court for a past date.",
       });
     }
     const updateBooking = await pgClient.query(
       "UPDATE bookings SET booking_date = $1, time_slot_id = $2 WHERE id = $3 RETURNING *",
-      [booking_date, time_slot_id, req.params.bookingId]
+      [booking_date, time_slot_id, req.params.bookingId],
     );
     res.status(200).json(updateBooking.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to update booking. Please try again." });
   }
 });
 
@@ -169,17 +171,18 @@ userRoutes.delete("/bookings/:bookingId", async (req, res) => {
   try {
     const deletebooking = await pgClient.query(
       "DELETE FROM bookings WHERE id = $1 RETURNING *",
-      [req.params.bookingId]
+      [req.params.bookingId],
     );
     res.status(200).json(deletebooking.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to delete booking. Please try again." });
   }
 });
 
-userRoutes.get("/court/:courtId", async(req, res)=>{
-  try{
-    const court = await pgClient.query( `
+userRoutes.get("/court/:courtId", async (req, res) => {
+  try {
+    const court = await pgClient.query(
+      `
       SELECT 
         c.*,
         s.name AS sport_name
@@ -187,11 +190,12 @@ userRoutes.get("/court/:courtId", async(req, res)=>{
       JOIN sports s ON c.sport_id = s.id
       WHERE c.id = $1
       `,
-      [req.params.courtId])
-      res.status(200).json(court.rows[0])
-  } catch(err){
-    res.status(500).json({error: err.message })
+      [req.params.courtId],
+    );
+    res.status(200).json(court.rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to load court details." });
   }
-})
+});
 
 export default userRoutes;

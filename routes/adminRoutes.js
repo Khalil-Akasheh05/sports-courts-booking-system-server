@@ -7,13 +7,13 @@ const adminRoutes = express.Router();
 adminRoutes.get("/stats", adminAuthorization, async (req, res) => {
   try {
     const revenueResult = await pgClient.query(
-      "SELECT COALESCE(SUM(bookings.booking_price), 0) as total_revenue FROM bookings"
+      "SELECT COALESCE(SUM(bookings.booking_price), 0) as total_revenue FROM bookings",
     );
     const bookingsResult = await pgClient.query(
-      "SELECT COUNT(*) as total_bookings from bookings"
+      "SELECT COUNT(*) as total_bookings from bookings",
     );
     const usersResult = await pgClient.query(
-      "SELECT COUNT(*) as total_users from users"
+      "SELECT COUNT(*) as total_users from users",
     );
     res.json({
       total_revenue: revenueResult.rows[0].total_revenue,
@@ -21,7 +21,7 @@ adminRoutes.get("/stats", adminAuthorization, async (req, res) => {
       total_users: usersResult.rows[0].total_users,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load stats." });
   }
 });
 
@@ -31,6 +31,7 @@ adminRoutes.get("/latest-bookings", adminAuthorization, async (req, res) => {
       `SELECT
         b.id,
         b.booking_date,
+        b.created_at,
 
         u.id AS user_id,
         u.full_name AS user_name,
@@ -55,11 +56,12 @@ adminRoutes.get("/latest-bookings", adminAuthorization, async (req, res) => {
       JOIN sports s ON c.sport_id = s.id
       JOIN time_slots ts ON b.time_slot_id = ts.id
 
-      ORDER BY b.booking_date DESC, ts.start_time`
+      ORDER BY b.created_at DESC
+      LIMIT 5`,
     );
     res.status(200).json(latestBookings.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load latest bookings." });
   }
 });
 
@@ -68,7 +70,7 @@ adminRoutes.get("/sports", adminAuthorization, async (req, res) => {
     const sports = await pgClient.query("SELECT * FROM sports");
     res.status(200).json(sports.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load sports." });
   }
 });
 
@@ -77,11 +79,11 @@ adminRoutes.post("/sports", adminAuthorization, async (req, res) => {
   try {
     const newSport = await pgClient.query(
       "INSERT INTO sports (name, image_url) VALUES ($1, $2) RETURNING *",
-      [name, image_url]
+      [name, image_url],
     );
     res.status(201).json(newSport.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to add sport. Please try again." });
   }
 });
 
@@ -89,11 +91,11 @@ adminRoutes.delete("/sports/:sportId", adminAuthorization, async (req, res) => {
   try {
     const deleteSport = await pgClient.query(
       "DELETE FROM sports WHERE id = $1 RETURNING *",
-      [req.params.sportId]
+      [req.params.sportId],
     );
     res.status(200).json(deleteSport.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to delete sport. Please try again." });
   }
 });
 
@@ -101,11 +103,11 @@ adminRoutes.get("/courts/:sportId", adminAuthorization, async (req, res) => {
   try {
     const courts = await pgClient.query(
       "SELECT * FROM courts WHERE sport_id = $1",
-      [req.params.sportId]
+      [req.params.sportId],
     );
     res.status(200).json(courts.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load courts." });
   }
 });
 
@@ -114,7 +116,7 @@ adminRoutes.post("/courts/:sportId", adminAuthorization, async (req, res) => {
   try {
     const newCourt = await pgClient.query(
       "INSERT INTO courts (court_type, price, image_url, sport_id, number) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [court_type, price, image_url, req.params.sportId, number]
+      [court_type, price, image_url, req.params.sportId, number],
     );
     await pgClient.query(
       `INSERT INTO time_slots (court_id, start_time, end_time) VALUES
@@ -128,11 +130,11 @@ adminRoutes.post("/courts/:sportId", adminAuthorization, async (req, res) => {
    ($1, '19:00', '20:00'),
    ($1, '20:00', '21:00'),
    ($1, '21:00', '22:00')`,
-      [newCourt.rows[0].id]
+      [newCourt.rows[0].id],
     );
     res.status(201).json(newCourt.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to add court. Please try again." });
   }
 });
 
@@ -140,11 +142,13 @@ adminRoutes.delete("/courts/:courtId", adminAuthorization, async (req, res) => {
   try {
     const deleteCourt = await pgClient.query(
       "DELETE FROM courts WHERE id = $1 RETURNING *",
-      [req.params.courtId]
+      [req.params.courtId],
     );
     res.status(200).json(deleteCourt.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete court. Please try again." });
   }
 });
 
@@ -153,11 +157,13 @@ adminRoutes.patch("/courts/:courtId", adminAuthorization, async (req, res) => {
   try {
     const updateCourt = await pgClient.query(
       "UPDATE courts SET price = $1 WHERE id = $2 RETURNING *",
-      [price, req.params.courtId]
+      [price, req.params.courtId],
     );
     res.status(200).json(updateCourt.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update court. Please try again." });
   }
 });
 
@@ -168,13 +174,15 @@ adminRoutes.patch(
     try {
       const disableCourt = await pgClient.query(
         "UPDATE courts SET is_disabled = true WHERE id = $1 RETURNING *",
-        [req.params.courtId]
+        [req.params.courtId],
       );
       res.status(200).json(disableCourt.rows[0]);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res
+        .status(500)
+        .json({ message: "Failed to disable court. Please try again." });
     }
-  }
+  },
 );
 
 adminRoutes.patch(
@@ -184,13 +192,15 @@ adminRoutes.patch(
     try {
       const enableCourt = await pgClient.query(
         "UPDATE courts SET is_disabled = false WHERE id = $1 RETURNING *",
-        [req.params.courtId]
+        [req.params.courtId],
       );
       res.status(200).json(enableCourt.rows[0]);
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res
+        .status(500)
+        .json({ message: "Failed to enable court. Please try again." });
     }
-  }
+  },
 );
 
 adminRoutes.get("/bookings", adminAuthorization, async (req, res) => {
@@ -216,11 +226,11 @@ JOIN users u ON b.user_id = u.id
 JOIN courts c ON b.court_id = c.id
 JOIN sports s ON c.sport_id = s.id
 JOIN time_slots ts ON b.time_slot_id = ts.id
-ORDER BY b.booking_date DESC, ts.start_time;
+ORDER BY b.booking_date DESC, ts.start_time ASC;
 `);
     res.status(200).json(bookings.rows);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Failed to load bookings." });
   }
 });
 

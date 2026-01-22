@@ -11,11 +11,11 @@ authenticationRoutes.post("/login", async (req, res) => {
       [email, password]
     );
     if (user.rows.length === 0) {
-      return res.status(401).json({ error: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid email or password." });
     }
     res.status(200).json(user.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Login failed. Please try again." });
   }
 });
 
@@ -24,7 +24,7 @@ authenticationRoutes.post("/signup", async (req, res) => {
   try {
     const existingUser = await pgClient.query("SELECT * FROM users WHERE email = $1", [email])
     if(existingUser.rows.length>0){
-      return res.status(400).json({error: "User already exists"})
+      return res.status(400).json({message: "User already exists."})
     }
     const user = await pgClient.query(
       "INSERT INTO users (full_name, email, password) VALUES ($1, $2, $3) RETURNING *",
@@ -32,7 +32,7 @@ authenticationRoutes.post("/signup", async (req, res) => {
     );
     res.status(201).json(user.rows[0]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: "Signup failed. Please try again." });
   }
 });
 

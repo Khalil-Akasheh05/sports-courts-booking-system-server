@@ -1,12 +1,12 @@
 # Sports-Courts-Booking-System (Express + PostgreSQL)
 
-This is the **backend** for the fullstack sports-courts-booking-system. It prov ides APIs for authentication, admin, and users.
+This is the **backend** for the fullstack sports-courts-booking-system. It provides APIs for authentication, admin, and users.
 
 ## Tech Stack
 
 - Node.js + Express
 - PostgreSQL (via 'pg')
--'dotenv', 'cors', 'morgan'
+- 'dotenv', 'cors', 'morgan'
 
 
 ## Getting Started
