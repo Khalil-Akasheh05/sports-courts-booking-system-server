@@ -16,9 +16,9 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-app.use("/api/admin", adminRoutes)
-app.use("/api/user", userRoutes)
-app.use("/api/auth", authenticationRoutes)
+app.use("/api/admin", adminRoutes);
+app.use("/api/user", userRoutes);
+app.use("/api/auth", authenticationRoutes);
 
 pgClient.connect().then(() => {
   app.listen(PORT, () => {
